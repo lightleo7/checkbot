@@ -10,5 +10,5 @@ dependencies = [
     "uvicorn",
     "pydantic",
     "typing",
-    "python-multipart"
+    "python-multipart",
 ]
