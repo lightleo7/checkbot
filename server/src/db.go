@@ -8,6 +8,11 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+type defect struct {
+	Type        string
+	Coordinates int
+}
+
 // InitDB -- инициализация базы данных
 // использование: db, dvErr := InitDB()
 // возвращает саму БД и код ошибки
@@ -35,7 +40,7 @@ func InitDB() (*sql.DB, error) {
 }
 
 // InsertToDB -- добавляет в базу данных структуру
-// использование: *int64* := InsertToDB(БД, структура_defect)
+// использование: lastID := InsertToDB(БД, структура_defect)
 // возвращает ID новой строки
 func InsertToDB(db *sql.DB, s defect) int64 {
 	result, err := db.Exec("INSERT INTO defects (type, coordinates) VALUES (?, ?)", s.Type, s.Coordinates)
@@ -50,7 +55,7 @@ func InsertToDB(db *sql.DB, s defect) int64 {
 
 // SelectFromDB -- получение последней строки из БД
 // возвращает структуру defect
-// использование: *defect* := SelectFromDB(БД, ID_строки)
+// использование: defect := SelectFromDB(БД, ID_строки)
 func SelectFromDB(db *sql.DB, id int) defect {
 	var newDefect defect
 	err := db.QueryRow("SELECT type, coordinates FROM defects WHERE id = ?", id).Scan(&newDefect.Type, &newDefect.Coordinates)
@@ -65,10 +70,10 @@ func SelectFromDB(db *sql.DB, id int) defect {
 }
 
 // GetLastID -- получение последнего ID в БД
-// использование: *int* := GetLastID(БД)
+// использование: id := GetLastID(БД)
 func GetLastID(db *sql.DB) int {
 	var id int
-	err := db.QueryRow("SELECT id FROM Defects ORDER BY id DESC LIMIT 1").Scan(&id)
+	err := db.QueryRow("SELECT id FROM defects ORDER BY id DESC LIMIT 1").Scan(&id)
 	if err == sql.ErrNoRows {
 		return 0
 	} else if err != nil {
@@ -77,4 +82,27 @@ func GetLastID(db *sql.DB) int {
 	}
 
 	return id
+}
+
+// GetAllDefects -- получение всех дефектов из БД
+func GetAllDefects(db *sql.DB) ([]defectResponse, error) {
+	var defects []defectResponse
+	
+	query := "SELECT id, type, coordinates FROM defects ORDER BY id DESC"
+	rows, err := db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	
+	for rows.Next() {
+		var d defectResponse
+		err := rows.Scan(&d.ID, &d.Type, &d.Coordinates)
+		if err != nil {
+			return nil, err
+		}
+		defects = append(defects, d)
+	}
+	
+	return defects, nil
 }

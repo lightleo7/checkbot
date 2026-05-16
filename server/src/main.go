@@ -1,28 +1,29 @@
 package main
 
-import "fmt"
-
-type defect struct {
-	Type        string
-	Coordinates int
-}
+import (
+	"fmt"
+	"log"
+)
 
 func main() {
-	db, dbErr := InitDB() // обязательно в начале программы
+	// Инициализация базы данных
+	db, dbErr := InitDB()
 	if dbErr != nil {
-		fmt.Printf("db error: %v\n", dbErr)
-		return
+		log.Fatalf("db error: %v\n", dbErr)
+	}
+	defer db.Close()
+
+	fmt.Println("bd inited")
+
+	// Добавляем тестовые данные
+	testDefect := defect{"tree", 15}
+	lastID := InsertToDB(db, testDefect)
+	if lastID > 0 {
+		fmt.Printf("test data added, id: %d\n", lastID)
+	} else {
+		log.Printf("cannot add data")
 	}
 
-	// далее я просто тестил базы данных
-
-	var newDefect = defect{"tree", 15} // создание структуры
-
-	InsertToDB(db, newDefect) // добавление ее в БД
-
-	lastID := GetLastID(db) // получение последнего ID в БД
-	var oldDefect = SelectFromDB(db, lastID) // получение последней строки в БД
-
-	// вывод последней строки в БД и последнего ID
-	fmt.Printf("the last row in the DB: %v. last ID: %d\n", oldDefect, lastID)
+	// Запускаем веб-сервер
+	StartServer(db)
 }
