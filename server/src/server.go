@@ -21,7 +21,6 @@ type pageData struct {
 	Defects []defectResponse
 }
 
-// Запуск HTTP сервера
 func StartServer(db *sql.DB) {
 	// Настройка обработки статических файлов
 	staticDir := "./src/static"
