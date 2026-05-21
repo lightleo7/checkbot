@@ -13,9 +13,6 @@ type defect struct {
 	Coordinates int
 }
 
-// InitDB -- инициализация базы данных
-// использование: db, dvErr := InitDB()
-// возвращает саму БД и код ошибки
 func InitDB() (*sql.DB, error) {
 	db, err := sql.Open("sqlite", "database.db")
 	if err != nil {
@@ -39,9 +36,6 @@ func InitDB() (*sql.DB, error) {
 	return db, nil
 }
 
-// InsertToDB -- добавляет в базу данных структуру
-// использование: lastID := InsertToDB(БД, структура_defect)
-// возвращает ID новой строки
 func InsertToDB(db *sql.DB, s defect) int64 {
 	result, err := db.Exec("INSERT INTO defects (type, coordinates) VALUES (?, ?)", s.Type, s.Coordinates)
 
@@ -53,9 +47,6 @@ func InsertToDB(db *sql.DB, s defect) int64 {
 	return lastID
 }
 
-// SelectFromDB -- получение последней строки из БД
-// возвращает структуру defect
-// использование: defect := SelectFromDB(БД, ID_строки)
 func SelectFromDB(db *sql.DB, id int) defect {
 	var newDefect defect
 	err := db.QueryRow("SELECT type, coordinates FROM defects WHERE id = ?", id).Scan(&newDefect.Type, &newDefect.Coordinates)
@@ -69,8 +60,6 @@ func SelectFromDB(db *sql.DB, id int) defect {
 	return newDefect
 }
 
-// GetLastID -- получение последнего ID в БД
-// использование: id := GetLastID(БД)
 func GetLastID(db *sql.DB) int {
 	var id int
 	err := db.QueryRow("SELECT id FROM defects ORDER BY id DESC LIMIT 1").Scan(&id)
@@ -84,7 +73,6 @@ func GetLastID(db *sql.DB) int {
 	return id
 }
 
-// GetAllDefects -- получение всех дефектов из БД
 func GetAllDefects(db *sql.DB) ([]defectResponse, error) {
 	var defects []defectResponse
 	

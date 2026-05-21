@@ -23,18 +23,16 @@ type pageData struct {
 
 func StartServer(db *sql.DB) {
 	// Настройка обработки статических файлов
-	staticDir := "./src/static"
+	staticDir := "./frontend/static"
 	fs := http.FileServer(http.Dir(staticDir))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	// Обработчик для главной страницы
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
 			return
 		}
 
-		// Загружаем HTML шаблон из файла
 		tmplPath := filepath.Join(staticDir, "index.html")
 		tmpl, err := template.ParseFiles(tmplPath)
 		if err != nil {
@@ -43,14 +41,12 @@ func StartServer(db *sql.DB) {
 			return
 		}
 
-		// Получаем все дефекты из базы данных
 		defects, err := GetAllDefects(db)
 		if err != nil {
 			log.Printf("Ошибка получения дефектов: %v", err)
 			defects = []defectResponse{}
 		}
 
-		// Создаем данные для шаблона
 		data := pageData{
 			Title:   "Система управления дефектами",
 			Defects: defects,
@@ -63,7 +59,6 @@ func StartServer(db *sql.DB) {
 		}
 	})
 
-	// API обработчик для получения всех дефектов
 	http.HandleFunc("/api/defects", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		
@@ -86,7 +81,7 @@ func StartServer(db *sql.DB) {
 				return
 			}
 			
-			// InsertToDB возвращает int64, а не error
+			// InsertToDB возвращает int64
 			lastID := InsertToDB(db, newDefect)
 			if lastID == 0 {
 				w.WriteHeader(http.StatusInternalServerError)
@@ -106,7 +101,6 @@ func StartServer(db *sql.DB) {
 		}
 	})
 
-	// Запускаем сервер
 	port := 8080
 	fmt.Printf("Server started at http://localhost:%d\n", port)
 	
