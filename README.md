@@ -1,12 +1,13 @@
 # Настройка сервера
 
 ``` bash
-cd server
+cd server/frontend
 npm install
+cd ..
 go run ./src
 ```
 
-## Ребилд CSS
+## Ребилд CSS (из папки frontend)
 
 ### С отслеживанием изменений
 
