@@ -6,7 +6,6 @@ import (
 )
 
 func main() {
-	// Инициализация базы данных
 	db, dbErr := InitDB()
 	if dbErr != nil {
 		log.Fatalf("db error: %v\n", dbErr)
