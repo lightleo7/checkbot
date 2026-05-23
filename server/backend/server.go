@@ -8,6 +8,9 @@ import (
 	"log"
 	"net/http"
 	"path/filepath"
+	"io"
+	"os"
+	"strings"
 )
 
 type defectResponse struct {
@@ -73,26 +76,87 @@ func StartServer(db *sql.DB) {
 			json.NewEncoder(w).Encode(defects)
 			
 		case http.MethodPost:
-			var newDefect defect
-			err := json.NewDecoder(r.Body).Decode(&newDefect)
+			// ограничение в 32 мб
+			err := r.ParseMultipartForm(32 << 20)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
-				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid request body"})
+				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid multipart form"})
 				return
 			}
-			
-			// InsertToDB возвращает int64
+
+			// текст
+			var newDefect defect
+			newDefect.Type = r.FormValue("Type")
+			newDefect.Coordinates = r.FormValue("Coordinates")
+
+			if newDefect.Type == "" || newDefect.Coordinates == "" {
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Missing Type or Coordinates"})
+				return
+			}
+
 			lastID := InsertToDB(db, newDefect)
 			if lastID == 0 {
 				w.WriteHeader(http.StatusInternalServerError)
-				json.NewEncoder(w).Encode(map[string]string{"error": "Failed to insert defect"})
+				json.NewEncoder(w).Encode(map[string]string{"error": "Failed to insert defect text data"})
 				return
 			}
-			
+
+			uploadDir := "./frontend/static/uploads"
+			if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
+				log.Printf("Ошибка создания директории: %v", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			var savedFilePaths []string
+
+			form := r.MultipartForm
+			for fileKey, fileHeaders := range form.File {
+				if len(fileHeaders) == 0 {
+					continue
+				}
+				fileHeader := fileHeaders[0]
+
+				file, err := fileHeader.Open()
+				if err != nil {
+					log.Printf("Ошибка открытия файла %s: %v", fileKey, err)
+					continue
+				}
+				defer file.Close()
+
+				filename := fmt.Sprintf("defect_%d_img_%s%s", lastID, fileKey, filepath.Ext(fileHeader.Filename))
+				targetPath := filepath.Join(uploadDir, filename)
+
+				dst, err := os.Create(targetPath)
+				if err != nil {
+					log.Printf("Ошибка создания файла на диске: %v", err)
+					continue
+				}
+				defer dst.Close()
+
+				_, err = io.Copy(dst, file)
+				if err != nil {
+					log.Printf("Ошибка копирования байт: %v", err)
+					continue
+				}
+
+				webPath := fmt.Sprintf("/static/uploads/%s", filename)
+				savedFilePaths = append(savedFilePaths, webPath)
+			}
+
+			if len(savedFilePaths) > 0 {
+				imagesList := strings.Join(savedFilePaths, ",")
+				_, err = db.Exec("UPDATE defects SET images = ? WHERE id = ?", imagesList, lastID)
+				if err != nil {
+					log.Printf("Ошибка при обновлении путей к изображениям в БД: %v", err)
+				}
+			}
 			w.WriteHeader(http.StatusCreated)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"message": "Defect added successfully",
-				"id": lastID,
+				"message": "Defect and images uploaded successfully",
+				"id":      lastID,
+				"images":  savedFilePaths,
 			})
 			
 		default:

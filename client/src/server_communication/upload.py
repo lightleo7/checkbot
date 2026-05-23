@@ -8,8 +8,8 @@ async def UploadToServer(data, files):
     async with httpx.AsyncClient() as client:
         try:
             
-            response = await client.post(f"{base_url}/api/defects", data=data, timeout=5.0)
-            #response = await client.post(f"{base_url}/api/defects", json=data, files=files, timeout=5.0)
+            # response = await client.post(f"{base_url}/api/defects", data=data, timeout=5.0)
+            response = await client.post(f"{base_url}/api/defects", data=data, files=files, timeout=5.0)
             response.raise_for_status()
             return True
             

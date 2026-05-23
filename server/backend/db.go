@@ -11,6 +11,7 @@ import (
 type defect struct {
     Type        string `json:"type"`
     Coordinates string `json:"coordinates"`
+    Images      string `json:"images"` // Новое поле: пути к файлам через запятую или JSON-строка
 }
 
 func InitDB() (*sql.DB, error) {
@@ -26,7 +27,8 @@ func InitDB() (*sql.DB, error) {
 	CREATE TABLE IF NOT EXISTS defects (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		type TEXT,
-		coordinates TEXT
+		coordinates TEXT,
+		images TEXT
 	);`
 
 	_, err = db.Exec(createTableSQL)
@@ -37,7 +39,7 @@ func InitDB() (*sql.DB, error) {
 }
 
 func InsertToDB(db *sql.DB, s defect) int64 {
-	result, err := db.Exec("INSERT INTO defects (type, coordinates) VALUES (?, ?)", s.Type, s.Coordinates)
+	result, err := db.Exec("INSERT INTO defects (type, coordinates, images) VALUES (?, ?, ?)", s.Type, s.Coordinates, s.Images)
 
 	if err != nil {
 		log.Fatalf("error: %v", err)
