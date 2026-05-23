@@ -1,6 +1,7 @@
 uploaded_images/
 node_modules/
 *.code-workspace
+uploads/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

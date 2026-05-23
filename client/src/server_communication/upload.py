@@ -7,8 +7,6 @@ base_url = "http://localhost:8080"
 async def UploadToServer(data, files):
     async with httpx.AsyncClient() as client:
         try:
-            
-            # response = await client.post(f"{base_url}/api/defects", data=data, timeout=5.0)
             response = await client.post(f"{base_url}/api/defects", data=data, files=files, timeout=5.0)
             response.raise_for_status()
             return True
@@ -35,10 +33,6 @@ async def SendData(Type, Coordinates, cvImages):
 
         i+=1
 
-    print("goyda otpravlena")
-    print(ready_to_send)
-
-
     data = {
         "Type": Type,
         "Coordinates": str(Coordinates)
@@ -49,5 +43,6 @@ async def SendData(Type, Coordinates, cvImages):
             print("goyda ne otpravlena")
             await asyncio.sleep(delay)
         else:
+            print("goyda otpravlena")
             break
 

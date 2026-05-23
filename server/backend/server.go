@@ -102,7 +102,7 @@ func StartServer(db *sql.DB) {
 				return
 			}
 
-			uploadDir := "./frontend/static/uploads"
+			uploadDir := "../uploads"
 			if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
 				log.Printf("Ошибка создания директории: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -141,7 +141,7 @@ func StartServer(db *sql.DB) {
 					continue
 				}
 
-				webPath := fmt.Sprintf("/static/uploads/%s", filename)
+				webPath := fmt.Sprintf("../uploads/%s", filename)
 				savedFilePaths = append(savedFilePaths, webPath)
 			}
 
