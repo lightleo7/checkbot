@@ -1,16 +1,16 @@
 package main
 
 import (
-	"database/sql"
-	"fmt"
-	"log"
+    "database/sql"
+    "fmt"
+    "log"
 
-	_ "modernc.org/sqlite"
+    _ "modernc.org/sqlite"
 )
 
 type defect struct {
-	Type        string
-	Coordinates string 
+    Type        string `json:"type"`
+    Coordinates string `json:"coordinates"`
 }
 
 func InitDB() (*sql.DB, error) {
@@ -26,7 +26,7 @@ func InitDB() (*sql.DB, error) {
 	CREATE TABLE IF NOT EXISTS defects (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		type TEXT,
-		coordinates text 
+		coordinates TEXT
 	);`
 
 	_, err = db.Exec(createTableSQL)
@@ -75,14 +75,14 @@ func GetLastID(db *sql.DB) int {
 
 func GetAllDefects(db *sql.DB) ([]defectResponse, error) {
 	var defects []defectResponse
-	
+
 	query := "SELECT id, type, coordinates FROM defects ORDER BY id DESC"
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	
+
 	for rows.Next() {
 		var d defectResponse
 		err := rows.Scan(&d.ID, &d.Type, &d.Coordinates)
@@ -91,6 +91,6 @@ func GetAllDefects(db *sql.DB) ([]defectResponse, error) {
 		}
 		defects = append(defects, d)
 	}
-	
+
 	return defects, nil
 }

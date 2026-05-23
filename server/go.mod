@@ -1,6 +1,6 @@
 module server
 
-go 1.26.2
+go 1.25.10
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
