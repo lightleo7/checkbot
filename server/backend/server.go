@@ -13,7 +13,7 @@ import (
 type defectResponse struct {
 	ID          int    `json:"id"`
 	Type        string `json:"type"`
-	Coordinates int    `json:"coordinates"`
+	Coordinates string `json:"coordinates"`
 }
 
 type pageData struct {

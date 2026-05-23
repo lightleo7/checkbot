@@ -10,7 +10,7 @@ import (
 
 type defect struct {
 	Type        string
-	Coordinates int
+	Coordinates string 
 }
 
 func InitDB() (*sql.DB, error) {
@@ -26,7 +26,7 @@ func InitDB() (*sql.DB, error) {
 	CREATE TABLE IF NOT EXISTS defects (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		type TEXT,
-		coordinates INT 
+		coordinates text 
 	);`
 
 	_, err = db.Exec(createTableSQL)
