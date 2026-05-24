@@ -4,7 +4,7 @@
 cd server/frontend
 npm install
 cd ..
-go run ./src
+go run ./backend
 ```
 
 ## Ребилд CSS (из папки frontend)
