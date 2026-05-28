@@ -1,7 +1,9 @@
+# Custom files and directories
 uploaded_images/
 node_modules/
 *.code-workspace
 uploads/
+database.db
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

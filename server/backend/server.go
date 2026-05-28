@@ -25,13 +25,17 @@ type pageData struct {
 }
 
 func StartServer(db *sql.DB) {
-	// Настройка обработки статических файлов
+	if err := db.Ping(); err != nil {
+		log.Fatalf("[DB] bd connect error: %v", err)
+	}
+
 	staticDir := "./frontend/static"
 	fs := http.FileServer(http.Dir(staticDir))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
+			log.Printf("[HTTP] 404 Not Found: %s %s", r.Method, r.URL.Path)
 			http.NotFound(w, r)
 			return
 		}
@@ -39,14 +43,14 @@ func StartServer(db *sql.DB) {
 		tmplPath := filepath.Join(staticDir, "index.html")
 		tmpl, err := template.ParseFiles(tmplPath)
 		if err != nil {
-			log.Printf("Ошибка загрузки шаблона: %v", err)
+			log.Printf("[HTML] Ошибка загрузки шаблона: %v", err)
 			http.Error(w, "Ошибка загрузки страницы", http.StatusInternalServerError)
 			return
 		}
 
 		defects, err := GetAllDefects(db)
 		if err != nil {
-			log.Printf("Ошибка получения дефектов: %v", err)
+			log.Printf("[DB] Ошибка получения дефектов: %v", err)
 			defects = []defectResponse{}
 		}
 
@@ -58,8 +62,10 @@ func StartServer(db *sql.DB) {
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		err = tmpl.Execute(w, data)
 		if err != nil {
-			log.Printf("Ошибка выполнения шаблона: %v", err)
+			log.Printf("[HTML] Ошибка рендеринга страницы: %v", err)
+			return
 		}
+		log.Printf("[HTTP] 200 OK: %s %s", r.Method, r.URL.Path)
 	})
 
 	http.HandleFunc("/api/defects", func(w http.ResponseWriter, r *http.Request) {
@@ -71,9 +77,11 @@ func StartServer(db *sql.DB) {
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+				log.Printf("[API] 500 Internal Server Error: GET /api/defects (bd error: %v)", err)
 				return
 			}
 			json.NewEncoder(w).Encode(defects)
+			log.Printf("[API] 200 OK: GET /api/defects")
 			
 		case http.MethodPost:
 			// ограничение в 32 мб
@@ -81,6 +89,7 @@ func StartServer(db *sql.DB) {
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid multipart form"})
+				log.Printf("[API] 400 Bad Request: POST /api/defects (Bad multipart form)")
 				return
 			}
 
@@ -92,6 +101,7 @@ func StartServer(db *sql.DB) {
 			if newDefect.Type == "" || newDefect.Coordinates == "" {
 				w.WriteHeader(http.StatusBadRequest)
 				json.NewEncoder(w).Encode(map[string]string{"error": "Missing Type or Coordinates"})
+				log.Printf("[API] 400 Bad Request: POST /api/defects (Missing Type или Coordinates)")
 				return
 			}
 
@@ -99,13 +109,14 @@ func StartServer(db *sql.DB) {
 			if lastID == 0 {
 				w.WriteHeader(http.StatusInternalServerError)
 				json.NewEncoder(w).Encode(map[string]string{"error": "Failed to insert defect text data"})
+				log.Printf("[API] 500 Internal Server Error: POST /api/defects (Failed to insert defect text data)")
 				return
 			}
 
 			uploadDir := "../uploads"
 			if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
-				log.Printf("Ошибка создания директории: %v", err)
 				w.WriteHeader(http.StatusInternalServerError)
+				log.Printf("[FILE] 500 Error creating folder %s: %v", uploadDir, err)
 				return
 			}
 
@@ -120,7 +131,7 @@ func StartServer(db *sql.DB) {
 
 				file, err := fileHeader.Open()
 				if err != nil {
-					log.Printf("Ошибка открытия файла %s: %v", fileKey, err)
+					log.Printf("[FILE] Error opening file %s: %v", fileKey, err)
 					continue
 				}
 				defer file.Close()
@@ -130,14 +141,14 @@ func StartServer(db *sql.DB) {
 
 				dst, err := os.Create(targetPath)
 				if err != nil {
-					log.Printf("Ошибка создания файла на диске: %v", err)
+					log.Printf("[FILE] Error creating file %s: %v", targetPath, err)
 					continue
 				}
 				defer dst.Close()
 
 				_, err = io.Copy(dst, file)
 				if err != nil {
-					log.Printf("Ошибка копирования байт: %v", err)
+					log.Printf("[FILE] Error writing file %s: %v", targetPath, err)
 					continue
 				}
 
@@ -149,24 +160,26 @@ func StartServer(db *sql.DB) {
 				imagesList := strings.Join(savedFilePaths, ",")
 				_, err = db.Exec("UPDATE defects SET images = ? WHERE id = ?", imagesList, lastID)
 				if err != nil {
-					log.Printf("Ошибка при обновлении путей к изображениям в БД: %v", err)
+					log.Printf("[DB] Ошибка обновления путей картинок для ID %d: %v", lastID, err)
 				}
 			}
+			
 			w.WriteHeader(http.StatusCreated)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"message": "Defect and images uploaded successfully",
 				"id":      lastID,
 				"images":  savedFilePaths,
 			})
+			log.Printf("[API] 201 Created: POST /api/defects (Created defect ID: %d, files count: %d)", lastID, len(savedFilePaths))
 			
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+			log.Printf("[API] 405 Method Not Allowed: %s /api/defects", r.Method)
 		}
 	})
 
 	port := 8080
-	fmt.Printf("Server started at http://localhost:%d\n", port)
-	
+	log.Printf("[SERVER] Server started at http://localhost:%d", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), nil))
 }
