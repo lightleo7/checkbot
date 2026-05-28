@@ -5,18 +5,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
 	"log"
 	"net/http"
-	"path/filepath"
-	"io"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 )
 
 type defectResponse struct {
-	ID          int    `json:"id"`
-	Type        string `json:"type"`
-	Coordinates string `json:"coordinates"`
+	ID          int      `json:"id"`
+	Type        string   `json:"type"`
+	Coordinates string   `json:"coordinates"`
+	Images      []string `json:"images,omitempty"`
 }
 
 type pageData struct {
@@ -32,6 +34,8 @@ func StartServer(db *sql.DB) {
 	staticDir := "./frontend/static"
 	fs := http.FileServer(http.Dir(staticDir))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
+
+	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("../uploads"))))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
@@ -68,6 +72,66 @@ func StartServer(db *sql.DB) {
 		log.Printf("[HTTP] 200 OK: %s %s", r.Method, r.URL.Path)
 	})
 
+	http.HandleFunc("/defect", func(w http.ResponseWriter, r *http.Request) {
+		idStr := r.URL.Query().Get("id")
+		if idStr == "" {
+			http.Error(w, "Missing id parameter", http.StatusBadRequest)
+			return
+		}
+
+		tmplPath := filepath.Join(staticDir, "defect.html")
+		tmpl, err := template.ParseFiles(tmplPath)
+		if err != nil {
+			http.Error(w, "Ошибка загрузки страницы дефекта", http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		tmpl.Execute(w, nil)
+	})
+
+	http.HandleFunc("/api/defects/", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != http.MethodGet {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+
+		idStr := strings.TrimPrefix(r.URL.Path, "/api/defects/")
+		id, err := strconv.Atoi(idStr)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Invalid ID"})
+			return
+		}
+
+		var d defectResponse
+		var imagesStr sql.NullString
+		err = db.QueryRow("SELECT id, type, coordinates, images FROM defects WHERE id = ?", id).Scan(&d.ID, &d.Type, &d.Coordinates, &imagesStr)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				w.WriteHeader(http.StatusNotFound)
+				json.NewEncoder(w).Encode(map[string]string{"error": "Defect not found"})
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			}
+			return
+		}
+
+		if imagesStr.Valid && imagesStr.String != "" {
+			rawPaths := strings.Split(imagesStr.String, ",")
+			for _, path := range rawPaths {
+				cleanPath := strings.TrimPrefix(path, "../uploads/")
+				d.Images = append(d.Images, "/uploads/"+cleanPath)
+			}
+		} else {
+			d.Images = []string{}
+		}
+
+		json.NewEncoder(w).Encode(d)
+	})
+
 	http.HandleFunc("/api/defects", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		
@@ -84,7 +148,6 @@ func StartServer(db *sql.DB) {
 			log.Printf("[API] 200 OK: GET /api/defects")
 			
 		case http.MethodPost:
-			// ограничение в 32 мб
 			err := r.ParseMultipartForm(32 << 20)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
@@ -93,7 +156,6 @@ func StartServer(db *sql.DB) {
 				return
 			}
 
-			// текст
 			var newDefect defect
 			newDefect.Type = r.FormValue("Type")
 			newDefect.Coordinates = r.FormValue("Coordinates")

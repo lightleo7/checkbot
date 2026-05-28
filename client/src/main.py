@@ -6,7 +6,7 @@ async def example():
     image = cv2.imread('photo.jpg', cv2.IMREAD_GRAYSCALE)
     image2 = cv2.imread('photo.jpg')
     # one image
-    await SendData(Type="tree", Coordinates="150", cvImages=[image])
+    await SendData(Type="treeeeee", Coordinates="12350", cvImages=[image])
     # two images
     await SendData(Type="trees", Coordinates="762381588", cvImages=[image, image2])
 
@@ -18,4 +18,4 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 
-    # asyncio.run(example())
+    asyncio.run(example())
