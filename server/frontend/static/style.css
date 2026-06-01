@@ -1,33 +1,35 @@
+/* frontend/static/style.css */
+
 :root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Полностью автономный стек современных шрифтов без засечек (Segoe UI для Windows, San Francisco для macOS) */
+  --font-display: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   
-  /* Тема: M3 Ocean Blue */
-  --md-sys-color-primary: #0061a4;
+  /* Фирменная палитра PixelOS */
+  --md-sys-color-primary: #0da100;
   --md-sys-color-on-primary: #ffffff;
-  --md-sys-color-primary-container: #d1e4ff;
-  --md-sys-color-on-primary-container: #001d36;
-  --md-sys-color-surface: #fdfcff;
-  --md-sys-color-on-surface: #1a1c1e;
-  --md-sys-color-surface-container: #f0f4f8;
-  --md-sys-color-surface-container-low: #f3f3f3;
-  --md-sys-color-on-surface-variant: #43474e;
-  --md-sys-color-outline-variant: #c3c7cf;
-  --md-sys-color-error: #ba1a1a;
+  --md-sys-color-surface: #f8f9fa;
+  --md-sys-color-on-surface: #111318;
+  --md-sys-color-surface-container: #ffffff;
+  --md-sys-color-surface-container-low: #f1f3f5;
+  --md-sys-color-on-surface-variant: #646464;
+  --md-sys-color-outline-variant: #e2e4e9;
+  --md-sys-color-error: #dc3545;
   
   background-color: var(--md-sys-color-surface);
   color: var(--md-sys-color-on-surface);
+  font-family: var(--font-body);
   margin: 0;
   padding: 0;
 }
 
-/* Красивая фиксированная шапка Top App Bar */
+/* Очистка стилей для App Bar */
 .app-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 24px;
-  background: rgba(253, 252, 255, 0.8);
-  backdrop-filter: blur(12px);
+  padding: 16px 32px;
+  background: #ffffff;
   border-bottom: 1px solid var(--md-sys-color-outline-variant);
   position: sticky;
   top: 0;
@@ -35,69 +37,79 @@
 }
 
 .app-bar h1 {
-  font-size: 22px;
-  font-weight: 400;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
   margin: 0;
+  letter-spacing: -0.3px;
 }
 
 .container {
-  max-width: 900px;
+  max-width: 800px;
   margin: 0 auto;
-  padding: 32px 24px 100px 24px; /* Отступ снизу для FAB */
+  padding: 40px 24px;
 }
 
-/* Сетка и карточки */
+.main-title {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+/* Сетка карточек */
 .defects-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  gap: 16px;
+  margin-top: 24px;
 }
 
+/* Карточки в стиле Pixel */
 .defect-card {
   background-color: var(--md-sys-color-surface-container);
-  border: 1px solid transparent;
+  border: 1px solid var(--md-sys-color-outline-variant);
   border-radius: 16px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  gap: 20px;
-  transition: all 0.25s cubic-bezier(0.2, 0, 0, 1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-/* Плавный подъем карточки при наведении в стиле M3 */
 .defect-card:hover {
-  transform: translateY(-4px);
-  background-color: var(--md-sys-color-surface-container-low);
-  border-color: var(--md-sys-color-outline-variant);
-  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
 }
 
 .card-header {
+  font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
   color: var(--md-sys-color-on-surface-variant);
   letter-spacing: 0.8px;
   text-transform: uppercase;
-  margin-bottom: 4px;
 }
 
 .card-title {
+  font-family: var(--font-display);
   font-size: 20px;
-  font-weight: 500;
-  margin: 0 0 8px 0;
+  font-weight: 600;
+  margin: 6px 0 0 0;
+  letter-spacing: -0.2px;
 }
 
 .coordinate-badge {
   font-family: monospace;
-  background-color: var(--md-sys-color-outline-variant);
-  color: var(--md-sys-color-on-surface);
-  padding: 4px 8px;
+  background-color: var(--md-sys-color-surface-container-low);
+  padding: 3px 6px;
   border-radius: 6px;
   font-size: 13px;
 }
 
-/* Фиксированная кнопка FAB снизу справа */
+/* FAB фиксация */
 .fab-container {
   position: fixed;
   bottom: 24px;
@@ -105,63 +117,65 @@
   z-index: 99;
 }
 
-/* Детализация дефекта */
+/* Скелетоны */
+@keyframes pulse { 50% { opacity: .5; } }
+.skeleton-card {
+  background: #ffffff;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 16px;
+  height: 160px;
+  animation: pulse 1.5s infinite;
+}
+
+/* Страница просмотра */
 .info-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
   margin: 24px 0;
 }
-
 .info-cell {
   background-color: var(--md-sys-color-surface-container);
-  border-radius: 12px;
-  padding: 16px;
+  border: 1px solid var(--md-sys-color-outline-variant);
+  border-radius: 16px;
+  padding: 20px;
 }
-
+.info-cell .value {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  margin-top: 6px;
+}
+.photo-section {
+  background: var(--md-sys-color-surface-container);
+  border: 1px solid var(--md-sys-color-outline-variant);
+  padding: 24px;
+  border-radius: 24px;
+  margin-top: 24px;
+}
 .image-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 16px;
-  margin-top: 12px;
+  margin-top: 16px;
 }
-
 .image-wrapper {
   overflow: hidden;
   border-radius: 16px;
-  border: 1px solid var(--md-sys-color-outline-variant);
-  background-color: var(--md-sys-color-surface-container);
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid var(--md-sys-color-outline-variant);
 }
-
 .image-wrapper img {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-
-/* Стили для скелетона (красивая анимация загрузки) */
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .4; }
-}
-
-.skeleton-card {
-  background-color: var(--md-sys-color-surface-container);
-  border-radius: 16px;
-  height: 180px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.skeleton-line {
-  background-color: var(--md-sys-color-outline-variant);
-  border-radius: 4px;
-  height: 12px;
+.status-text {
+  text-align: center;
+  padding: 40px;
+  color: var(--md-sys-color-on-surface-variant);
 }

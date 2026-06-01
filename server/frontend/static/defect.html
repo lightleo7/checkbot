@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Просмотр дефекта</title>
+    <title>Карточка дефекта</title>
     <link rel="stylesheet" href="/static/style.css">
     
     <script type="importmap">
@@ -26,27 +26,30 @@
 </head>
 <body>
 
+    <!-- Шапка Top App Bar -->
     <header class="app-bar">
         <div style="display: flex; align-items: center; gap: 12px;">
-            <svg viewBox="0 0 24 24" width="24" height="24" fill="var(--md-sys-color-primary)">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="var(--md-sys-color-primary)">
                 <path d="M12 22C6.49 22 2 17.51 2 12S6.49 2 12 2s10 4.49 10 10-4.49 10-10 10zm0-18c-4.41 0-8 3.59-8 8s3.59 8 8 8 8-3.59 8-8-3.59-8-8-8zm1 11h-2v2h2v-2zm0-8h-2v6h2V7z"/>
             </svg>
-            <h1>Карточка дефекта</h1>
+            <h1>Панель управления дефектами</h1>
         </div>
     </header>
 
-    <div class="container" style="max-width: 768px;">
-        <a href="/" style="text-decoration: none; align-self: flex-start; margin-bottom: 24px; display: inline-block;">
-            <md-text-button>
-                <svg slot="icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" style="display: inline-block; vertical-align: middle;">
+    <div class="container">
+        <!-- Кнопка назад в стиле минимализма PixelOS -->
+        <a href="/" style="text-decoration: none; align-self: flex-start; margin-bottom: 28px; display: inline-block;">
+            <md-text-button style="--md-text-button-label-text-font: var(--font-display); --md-text-button-label-text-weight: 500;">
+                <svg slot="icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
                     <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
                 </svg>
-                Вернуться к списку
+                Назад к списку
             </md-text-button>
         </a>
 
+        <!-- Сюда подгружаются ровные данные -->
         <div id="defectContainer">
-            <div class="skeleton-card" style="height: 300px;"><div class="skeleton-line" style="width:20%"></div><div class="skeleton-line" style="width:40%"></div><div class="skeleton-line" style="width:100%; height:150px;"></div></div>
+            <div class="skeleton-card"></div>
         </div>
     </div>
 
@@ -56,7 +59,7 @@
             const id = new URLSearchParams(window.location.search).get('id');
 
             if (!id) {
-                container.innerHTML = '<p style="text-align:center; color:var(--md-sys-color-error)">ID не указан</p>';
+                container.innerHTML = '<p class="status-text" style="color:var(--md-sys-color-error)">Идентификатор не указан</p>';
                 return;
             }
 
@@ -65,7 +68,7 @@
                 if (!response.ok) throw new Error();
                 const defect = await response.json();
 
-                let imagesHtml = '<p style="color:var(--md-sys-color-on-surface-variant); font-style:italic; padding-top:4px;">Снимки повреждения отсутствуют</p>';
+                let imagesHtml = '<p style="color:var(--md-sys-color-on-surface-variant); font-style:italic; margin-top:8px;">Фотографии отсутствуют</p>';
                 if (defect.images && defect.images.length > 0) {
                     imagesHtml = `
                         <div class="image-grid">
@@ -76,32 +79,35 @@
                 }
 
                 container.innerHTML = `
-                    <div style="margin-bottom: 24px; animation: pulse 0.4s ease-out; opacity:1;">
-                        <span class="card-header">Инспекция</span>
-                        <h2 style="font-size: 32px; font-weight: 400; margin: 4px 0 0 0;">Дефект #${defect.id}</h2>
+                    <div style="margin-bottom: 28px;">
+                        <span class="card-header">Карточка инспекции</span>
+                        <h2 class="main-title">Дефект #${defect.id}</h2>
                     </div>
 
                     <div class="info-grid">
                         <div class="info-cell">
-                            <span class="card-header" style="display:block; margin-bottom:4px;">Категория / Тип</span>
-                            <span style="font-size:18px; font-weight:500;">${defect.type}</span>
+                            <span class="card-header">Тип повреждения</span>
+                            <span class="value">${defect.type}</span>
                         </div>
                         <div class="info-cell">
-                            <span class="card-header" style="display:block; margin-bottom:4px;">GPS-Координаты</span>
-                            <span class="coordinate-badge" style="display:inline-block; font-size:15px; margin-top:2px;">${defect.coordinates}</span>
+                            <span class="card-header">Координаты объекта</span>
+                            <div style="margin-top:8px;">
+                                <span class="coordinate-badge">${defect.coordinates}</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div style="margin-top: 32px; background: var(--md-sys-color-surface-container); padding: 24px; border-radius: 20px;">
-                        <span class="card-header" style="display:block; margin-bottom:12px;">Фотофиксация с объекта</span>
+                    <div class="photo-section">
+                        <span class="card-header">Прикрепленные медиафайлы</span>
                         ${imagesHtml}
                     </div>
                 `;
             } catch {
-                container.innerHTML = '<p style="text-align:center; color:var(--md-sys-color-error)">Ошибка загрузки карточки дефекта</p>';
+                container.innerHTML = '<p class="status-text" style="color:var(--md-sys-color-error)">Не удалось загрузить данные о дефекте</p>';
             }
         }
-        setTimeout(loadDefectDetails, 400);
+        // Небольшой таймаут, чтобы плавно отработал скелетон
+        setTimeout(loadDefectDetails, 300);
     </script>
 </body>
 </html>
