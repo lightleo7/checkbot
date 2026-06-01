@@ -34,6 +34,7 @@ func StartServer(db *sql.DB) {
 	staticDir := "./frontend/static"
 	fs := http.FileServer(http.Dir(staticDir))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	http.Handle("/node_modules/", http.StripPrefix("/node_modules/", http.FileServer(http.Dir("./frontend/node_modules"))))
 
 	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("../uploads"))))
 
