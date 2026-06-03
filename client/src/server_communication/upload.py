@@ -2,11 +2,44 @@ import asyncio, httpx, cv2
 from datetime import datetime
 
 base_url = "http://localhost:8080"
+pswd = "your_secret_key"
+
+api_token = None
+
+async def GetToken(client: httpx.AsyncClient) -> bool:
+    global api_token
+    try:
+        response = await client.post(f"{base_url}/api/auth", json={"password": pswd}, timeout=5.0)
+        if response.status_code == 200:
+            api_token = response.json().get("token")
+            print("[Python] Токен авторизации успешно получен и сохранен.")
+            return True
+        else:
+            print(f"[Python] Ошибка авторизации: {response.status_code} - {response.text}")
+            return False
+    except httpx.HTTPError as e:
+        print(f"[Python] Сетевая ошибка при попытке авторизации: {e}")
+        return False
 
 async def UploadToServer(data, files):
+    global api_token
     async with httpx.AsyncClient() as client:
+        if not api_token:
+            if not await GetToken(client):
+                return False
+
+        headers = {"X-API-Token": api_token}
         try:
-            response = await client.post(f"{base_url}/api/defects", data=data, files=files, timeout=5.0)
+            response = await client.post(f"{base_url}/api/defects", data=data, headers=headers, files=files, timeout=5.0)
+
+            if response.status_code == 401:
+                print("[Python] Токен устарел. Попытка обновить...")
+                if await GetToken(client):
+                    headers["X-API-Token"] = api_token
+                    response = await client.post(f"{base_url}/api/defects", data=data, files=files, headers=headers, timeout=5.0)
+                else:
+                    return False
+
             response.raise_for_status()
             return True
             

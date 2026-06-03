@@ -8,6 +8,7 @@ database.db
 # Custom files and directories
 node_modules/
 *.code-workspace
+password.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

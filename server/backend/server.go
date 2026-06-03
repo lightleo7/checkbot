@@ -32,14 +32,81 @@ func StartServer(db *sql.DB) {
 	if err := db.Ping(); err != nil {
 		log.Fatalf("[DB] bd connect error: %v", err)
 	}
+	
+	LoadPasswordHash()
 
 	staticDir := "./frontend/static"
 	fs := http.FileServer(http.Dir(staticDir))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	http.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("../uploads"))))
+	http.Handle("/uploads/", AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		http.StripPrefix("/uploads/", http.FileServer(http.Dir("../uploads"))).ServeHTTP(w, r)
+	}))
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			tmplPath := filepath.Join(staticDir, "login.html")
+			tmpl, err := template.ParseFiles(tmplPath)
+			if err != nil {
+				http.Error(w, "Ошибка загрузки страницы логина", http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "text/html; charset=utf-8")
+			tmpl.Execute(w, nil)
+			return
+		}
+
+		if r.Method == http.MethodPost {
+			password := r.FormValue("password")
+
+			// Используем проверку из auth.go
+			if !CheckPassword(password) {
+				http.Redirect(w, r, "/login?error=1", http.StatusSeeOther)
+				return
+			}
+
+			token := GetOrCreateSession()
+
+			http.SetCookie(w, &http.Cookie{
+				Name:     "session_token",
+				Value:    token,
+				Expires:  time.Now().Add(24 * time.Hour),
+				HttpOnly: true,
+				Path:     "/",
+			})
+
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+		}
+	})
+
+	http.HandleFunc("/api/auth", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			return
+		}
+		var req struct {
+			Password string `json:"password"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		if !CheckPassword(req.Password) {
+			w.WriteHeader(http.StatusUnauthorized)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Wrong password"})
+			return
+		}
+
+		token := GetOrCreateSession()
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"token": token})
+	})
+
+	// protected
+
+	http.HandleFunc("/", AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			log.Printf("[HTTP] 404 Not Found: %s %s", r.Method, r.URL.Path)
 			http.NotFound(w, r)
@@ -71,10 +138,9 @@ func StartServer(db *sql.DB) {
 			log.Printf("[HTML] Ошибка рендеринга страницы: %v", err)
 			return
 		}
-		log.Printf("[HTTP] 200 OK: %s %s", r.Method, r.URL.Path)
-	})
+	}))
 
-	http.HandleFunc("/defect", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/defect", AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		idStr := r.URL.Query().Get("id")
 		if idStr == "" {
 			http.Error(w, "Missing id parameter", http.StatusBadRequest)
@@ -90,9 +156,9 @@ func StartServer(db *sql.DB) {
 
 		w.Header().Set("Content-Type", "text/html; charset=utf-8")
 		tmpl.Execute(w, nil)
-	})
+	}))
 
-	http.HandleFunc("/api/defects/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/api/defects/", AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method != http.MethodGet {
 			w.WriteHeader(http.StatusMethodNotAllowed)
@@ -132,29 +198,26 @@ func StartServer(db *sql.DB) {
 		}
 
 		json.NewEncoder(w).Encode(d)
-	})
+	}))
 
-	http.HandleFunc("/api/defects", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/api/defects", AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		
+
 		switch r.Method {
 		case http.MethodGet:
 			defects, err := GetAllDefects(db)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
-				log.Printf("[API] 500 Internal Server Error: GET /api/defects (bd error: %v)", err)
 				return
 			}
 			json.NewEncoder(w).Encode(defects)
-			log.Printf("[API] 200 OK: GET /api/defects")
-			
+
 		case http.MethodPost:
 			err := r.ParseMultipartForm(32 << 20)
 			if err != nil {
 				w.WriteHeader(http.StatusBadRequest)
 				json.NewEncoder(w).Encode(map[string]string{"error": "Invalid multipart form"})
-				log.Printf("[API] 400 Bad Request: POST /api/defects (Bad multipart form)")
 				return
 			}
 
@@ -166,7 +229,6 @@ func StartServer(db *sql.DB) {
 			if newDefect.Type == "" || newDefect.Coordinates == "" {
 				w.WriteHeader(http.StatusBadRequest)
 				json.NewEncoder(w).Encode(map[string]string{"error": "Missing Type or Coordinates"})
-				log.Printf("[API] 400 Bad Request: POST /api/defects (Missing Type или Coordinates)")
 				return
 			}
 
@@ -174,19 +236,16 @@ func StartServer(db *sql.DB) {
 			if lastID == 0 {
 				w.WriteHeader(http.StatusInternalServerError)
 				json.NewEncoder(w).Encode(map[string]string{"error": "Failed to insert defect text data"})
-				log.Printf("[API] 500 Internal Server Error: POST /api/defects (Failed to insert defect text data)")
 				return
 			}
 
 			uploadDir := "../uploads"
 			if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
-				log.Printf("[FILE] 500 Error creating folder %s: %v", uploadDir, err)
 				return
 			}
 
 			var savedFilePaths []string
-
 			form := r.MultipartForm
 			for fileKey, fileHeaders := range form.File {
 				if len(fileHeaders) == 0 {
@@ -196,7 +255,6 @@ func StartServer(db *sql.DB) {
 
 				file, err := fileHeader.Open()
 				if err != nil {
-					log.Printf("[FILE] Error opening file %s: %v", fileKey, err)
 					continue
 				}
 				defer file.Close()
@@ -206,14 +264,12 @@ func StartServer(db *sql.DB) {
 
 				dst, err := os.Create(targetPath)
 				if err != nil {
-					log.Printf("[FILE] Error creating file %s: %v", targetPath, err)
 					continue
 				}
 				defer dst.Close()
 
 				_, err = io.Copy(dst, file)
 				if err != nil {
-					log.Printf("[FILE] Error writing file %s: %v", targetPath, err)
 					continue
 				}
 
@@ -228,16 +284,13 @@ func StartServer(db *sql.DB) {
 					log.Printf("[DB] Ошибка обновления путей картинок для ID %d: %v", lastID, err)
 				}
 			}
-			
+
 			w.WriteHeader(http.StatusCreated)
 			json.NewEncoder(w).Encode(map[string]interface{}{
 				"message": "Defect and images uploaded successfully",
 				"id":      lastID,
 				"images":  savedFilePaths,
 			})
-			log.Printf("[API] 201 Created: POST /api/defects (Created defect ID: %d, files count: %d)", lastID, len(savedFilePaths))
-
-			log.Printf("[REPORTS] Starting creating report #%d", lastID)
 
 			report := DamageReport{
 				ID:           strconv.FormatInt(lastID, 10),
@@ -253,17 +306,13 @@ func StartServer(db *sql.DB) {
 			if err_report != nil {
 				fmt.Printf("[REPORTS] Error creating report #%d: %v\n", lastID, err)
 				return
-			} else {
-				log.Printf("[REPORTS] Report #%d created succesfully!", lastID)
 			}
-			
-			
+
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
 			json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
-			log.Printf("[API] 405 Method Not Allowed: %s /api/defects", r.Method)
 		}
-	})
+	}))
 
 	port := 8080
 	log.Printf("[SERVER] Server started at http://localhost:%d", port)

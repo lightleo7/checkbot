@@ -4,7 +4,19 @@
 cd server/frontend
 npm install
 cd ..
+
+nano password.txt # закиньте сюда bcrypt хэш своего пароля
+
 go run ./backend
+```
+
+# Настройка клиента
+
+``` bash
+nano client/src/server_communication # здесь в pwsd вставьте свой пароль (НЕ ХЭШ!)
+cd client/src
+uv sync
+uv run main.py
 ```
 
 ## Ребилд CSS (из папки frontend)
