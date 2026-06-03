@@ -11,7 +11,8 @@ import (
 type defect struct {
     Type        string `json:"type"`
     Coordinates string `json:"coordinates"`
-    Images      string `json:"images"` // Новое поле: пути к файлам через запятую или JSON-строка
+	TimeSpotted string `json:"time_spotted"`
+    Images      string `json:"images"`
 }
 
 func InitDB() (*sql.DB, error) {
@@ -28,6 +29,7 @@ func InitDB() (*sql.DB, error) {
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		type TEXT,
 		coordinates TEXT,
+		time_spotted TEXT,
 		images TEXT
 	);`
 
@@ -39,7 +41,7 @@ func InitDB() (*sql.DB, error) {
 }
 
 func InsertToDB(db *sql.DB, s defect) int64 {
-	result, err := db.Exec("INSERT INTO defects (type, coordinates, images) VALUES (?, ?, ?)", s.Type, s.Coordinates, s.Images)
+	result, err := db.Exec("INSERT INTO defects (type, coordinates, time_spotted, images) VALUES (?, ?, ?, ?)", s.Type, s.Coordinates, s.TimeSpotted, s.Images)
 
 	if err != nil {
 		log.Fatalf("error: %v", err)
@@ -51,7 +53,7 @@ func InsertToDB(db *sql.DB, s defect) int64 {
 
 func SelectFromDB(db *sql.DB, id int) defect {
 	var newDefect defect
-	err := db.QueryRow("SELECT type, coordinates FROM defects WHERE id = ?", id).Scan(&newDefect.Type, &newDefect.Coordinates)
+	err := db.QueryRow("SELECT type, coordinates, time_spotted FROM defects WHERE id = ?", id).Scan(&newDefect.Type, &newDefect.Coordinates, &newDefect.TimeSpotted)
 
 	if err == sql.ErrNoRows {
 		fmt.Println("there is no defect with this ID")
@@ -78,7 +80,7 @@ func GetLastID(db *sql.DB) int {
 func GetAllDefects(db *sql.DB) ([]defectResponse, error) {
 	var defects []defectResponse
 
-	query := "SELECT id, type, coordinates FROM defects ORDER BY id DESC"
+	query := "SELECT id, type, coordinates, time_spotted FROM defects ORDER BY id DESC"
 	rows, err := db.Query(query)
 	if err != nil {
 		return nil, err
@@ -87,7 +89,7 @@ func GetAllDefects(db *sql.DB) ([]defectResponse, error) {
 
 	for rows.Next() {
 		var d defectResponse
-		err := rows.Scan(&d.ID, &d.Type, &d.Coordinates)
+		err := rows.Scan(&d.ID, &d.Type, &d.Coordinates, &d.TimeSpotted)
 		if err != nil {
 			return nil, err
 		}

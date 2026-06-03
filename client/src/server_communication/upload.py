@@ -1,6 +1,5 @@
-import asyncio
-import httpx
-import cv2
+import asyncio, httpx, cv2
+from datetime import datetime
 
 base_url = "http://localhost:8080"
 
@@ -35,7 +34,8 @@ async def SendData(Type, Coordinates, cvImages):
 
     data = {
         "Type": Type,
-        "Coordinates": str(Coordinates)
+        "Coordinates": str(Coordinates),
+        "TimeSpotted": datetime.now().strftime("%H:%M:%S")
     }
 
     while True:

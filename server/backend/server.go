@@ -12,12 +12,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type defectResponse struct {
 	ID          int      `json:"id"`
 	Type        string   `json:"type"`
 	Coordinates string   `json:"coordinates"`
+	TimeSpotted string   `json:"time_spotted"`
 	Images      []string `json:"images,omitempty"`
 }
 
@@ -159,6 +161,7 @@ func StartServer(db *sql.DB) {
 			var newDefect defect
 			newDefect.Type = r.FormValue("Type")
 			newDefect.Coordinates = r.FormValue("Coordinates")
+			newDefect.TimeSpotted = r.FormValue("TimeSpotted")
 
 			if newDefect.Type == "" || newDefect.Coordinates == "" {
 				w.WriteHeader(http.StatusBadRequest)
@@ -233,6 +236,27 @@ func StartServer(db *sql.DB) {
 				"images":  savedFilePaths,
 			})
 			log.Printf("[API] 201 Created: POST /api/defects (Created defect ID: %d, files count: %d)", lastID, len(savedFilePaths))
+
+			log.Printf("[REPORTS] Starting creating report #%d", lastID)
+
+			report := DamageReport{
+				ID:           strconv.FormatInt(lastID, 10),
+				Date:         time.Now().Format("2006-01-02"),
+				TimeSpotted:  r.FormValue("TimeSpotted"),
+				TimeReceived: time.Now().Format("15:04:05"),
+				TypeName:     r.FormValue("Type"),
+				Coordinates:  r.FormValue("Coordinates"),
+				ImagePaths:   savedFilePaths,
+			}
+
+			err_report := ExportSingleReport(report, "./reports")
+			if err_report != nil {
+				fmt.Printf("[REPORTS] Error creating report #%d: %v\n", lastID, err)
+				return
+			} else {
+				log.Printf("[REPORTS] Report #%d created succesfully!", lastID)
+			}
+			
 			
 		default:
 			w.WriteHeader(http.StatusMethodNotAllowed)
