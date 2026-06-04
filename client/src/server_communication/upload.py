@@ -78,4 +78,3 @@ async def SendData(Type, Coordinates, cvImages):
         else:
             print("goyda otpravlena")
             break
-

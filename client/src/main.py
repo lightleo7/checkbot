@@ -1,6 +1,7 @@
 import asyncio
 import cv2
 from server_communication.upload import SendData
+from server_communication.websocket_stream import ws_streaming_task, frame_queue
 
 async def example():
     image = cv2.imread('photo.jpg', cv2.IMREAD_GRAYSCALE)
@@ -19,6 +20,9 @@ async def main():
         return
     
     frame_count = 0
+    STREAM_EVERY_N_FRAME = 3
+
+    ws_task = asyncio.create_task(ws_streaming_task())
 
     try:
         while True:
@@ -31,7 +35,7 @@ async def main():
 
             key = cv2.waitKey(1) & 0xFF
             if key == ord('s'):
-                asyncio.create_task(SendData(Type="treeeeee", Coordinates="12350", cvImages=[frame]))
+                asyncio.create_task(SendData(Type="treeeeee", Coordinates="12350", cvImages=[frame.copy()]))
 
             if key == ord('q'):
                 print("end...")
@@ -39,9 +43,14 @@ async def main():
 
             cv2.imshow("framerr", frame)
 
+            if frame_count % STREAM_EVERY_N_FRAME == 0:
+                if not frame_queue.full():
+                    frame_queue.put_nowait(frame.copy())
+
             await asyncio.sleep(0.001)
 
     finally:
+        ws_task.cancel()
         cap.release()
         cv2.destroyAllWindows()
         await asyncio.sleep(1)

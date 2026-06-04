@@ -29,11 +29,14 @@ type pageData struct {
 }
 
 func StartServer(db *sql.DB) {
+
 	if err := db.Ping(); err != nil {
 		log.Fatalf("[DB] bd connect error: %v", err)
 	}
 	
 	LoadPasswordHash()
+
+    InitStreamRoutes()
 
 	staticDir := "./frontend/static"
 	fs := http.FileServer(http.Dir(staticDir))
@@ -140,6 +143,10 @@ func StartServer(db *sql.DB) {
 		}
 	}))
 
+	http.HandleFunc("/view", AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		http.ServeFile(w, r, filepath.Join(staticDir, "view.html"))
+	}))
+
 	http.HandleFunc("/defect", AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		idStr := r.URL.Query().Get("id")
 		if idStr == "" {
@@ -223,7 +230,6 @@ func StartServer(db *sql.DB) {
 			json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
 		}
 	}))
-
 
 	http.HandleFunc("/api/defects", AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

@@ -9,4 +9,5 @@ dependencies = [
     "numpy>=2.2.6",
     "opencv-python>=4.13.0.92",
     "requests>=2.34.2",
+    "websockets>=16.0",
 ]
