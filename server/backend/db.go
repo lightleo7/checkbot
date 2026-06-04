@@ -16,20 +16,15 @@ type defect struct {
     Images      string `json:"images"`
 }
 
-
-// ClrDB полностью очищает таблицу defects и сбрасывает счетчик ID
 func ClrDB(db *sql.DB) error {
-	// 1. Удаляем все записи из таблицы defects
 	_, err := db.Exec("DELETE FROM defects;")
 	if err != nil {
 		log.Printf("Ошибка при очистке таблицы defects: %v", err)
 		return err
 	}
 
-	// 2. Сбрасываем счетчик автоинкремента в SQLite
 	_, _ = db.Exec("UPDATE sqlite_sequence SET seq = 0 WHERE name = 'defects';")
 
-	// 3. Сжимаем файл базы данных на диске
 	_, _ = db.Exec("VACUUM;")
 
 	log.Println("База данных (таблица defects) успешно очищена.")
@@ -39,13 +34,11 @@ func ClrDB(db *sql.DB) error {
 }
 
 func DeleteFolderForce(dirPath string) {
-	// Удаляет папку и все файлы внутри. 
-	// Если папки изначально не было, ошибки НЕ БУДЕТ.
 	err := os.RemoveAll(dirPath)
 	if err != nil {
 		log.Fatalf("Не удалось удалить папку: %v", err)
 	}
-	log.Printf("Папка \"%s\" и всё её содержимое успешно удалены!", dirPath)
+	log.Printf("Dir \"%s\" deleted", dirPath)
 }
 
 func InitDB() (*sql.DB, error) {

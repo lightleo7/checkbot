@@ -2,7 +2,7 @@ import asyncio, httpx, cv2
 from datetime import datetime
 
 base_url = "http://localhost:8080"
-pswd = "your_secret_key"
+pswd = "1234"
 
 api_token = None
 

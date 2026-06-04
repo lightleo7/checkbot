@@ -13,9 +13,13 @@
         </h1>
         <div id="message" class="transition-all duration-300"></div>
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-                Список дефектов
-            </h2>
+            <div class="flex items-center justify-between gap-4 w-full mb-3">
+                <h2 class="text-xl font-bold text-gray-900">Список дефектов</h2>
+                
+                <button id="clearBD" class="shrink-0 rounded-xl border border-blue-200 bg-white px-4 py-2 text-center text-sm font-medium text-blue-600 shadow-sm transition-all hover:border-blue-600 hover:bg-blue-600 hover:text-white">
+                    Очистить базу данных
+                </button>
+            </div>
             <div id="defectsList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <p class="col-span-full text-center py-8 text-gray-500 animate-pulse">
                     Загрузка дефектов...
@@ -25,6 +29,27 @@
     </div>
 
     <script>
+        const clrbdbtn = document.getElementById("clearBD");
+        clrbdbtn.addEventListener("click", async () => {
+            try {
+                const response = await fetch("/api/clearDefects", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: "{}"
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                } else {
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
         async function loadDefects() {
             try {
                 const response = await fetch('/api/defects');

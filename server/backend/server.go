@@ -200,6 +200,31 @@ func StartServer(db *sql.DB) {
 		json.NewEncoder(w).Encode(d)
 	}))
 
+	http.HandleFunc("/api/clearDefects", AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		switch r.Method {
+
+		case http.MethodPost:
+			err := ClrDB(db)
+			if err != nil {
+				fmt.Println(err)
+				w.WriteHeader(http.StatusBadRequest)
+				json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+				return
+			}
+
+			w.WriteHeader(http.StatusOK)
+			json.NewEncoder(w).Encode(map[string]string{
+				"message": "Database cleared successfully!",
+			})
+		default:
+			w.WriteHeader(http.StatusMethodNotAllowed)
+			json.NewEncoder(w).Encode(map[string]string{"error": "Method not allowed"})
+		}
+	}))
+
+
 	http.HandleFunc("/api/defects", AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
