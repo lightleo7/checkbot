@@ -40,7 +40,7 @@ func StartServer(db *sql.DB) {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
 	http.Handle("/uploads/", AuthMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		http.StripPrefix("/uploads/", http.FileServer(http.Dir("../uploads"))).ServeHTTP(w, r)
+		http.StripPrefix("/uploads/", http.FileServer(http.Dir("./uploads"))).ServeHTTP(w, r)
 	}))
 
 	http.HandleFunc("/login", func(w http.ResponseWriter, r *http.Request) {
@@ -190,7 +190,7 @@ func StartServer(db *sql.DB) {
 		if imagesStr.Valid && imagesStr.String != "" {
 			rawPaths := strings.Split(imagesStr.String, ",")
 			for _, path := range rawPaths {
-				cleanPath := strings.TrimPrefix(path, "../uploads/")
+				cleanPath := strings.TrimPrefix(path, "./uploads/")
 				d.Images = append(d.Images, "/uploads/"+cleanPath)
 			}
 		} else {
@@ -239,7 +239,7 @@ func StartServer(db *sql.DB) {
 				return
 			}
 
-			uploadDir := "../uploads"
+			uploadDir := "./uploads"
 			if err := os.MkdirAll(uploadDir, os.ModePerm); err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -273,7 +273,7 @@ func StartServer(db *sql.DB) {
 					continue
 				}
 
-				webPath := fmt.Sprintf("../uploads/%s", filename)
+				webPath := fmt.Sprintf("./uploads/%s", filename)
 				savedFilePaths = append(savedFilePaths, webPath)
 			}
 
