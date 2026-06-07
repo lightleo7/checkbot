@@ -36,8 +36,6 @@
 
                 let imagesHtml = '<p class="text-gray-400 text-sm italic">Изображения отсутствуют</p>';
                 if (defect.images && defect.images.length > 0) {
-                    // Было: class="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    // Стало (без обрезки):
                     imagesHtml = `
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             ${defect.images.map(src => `

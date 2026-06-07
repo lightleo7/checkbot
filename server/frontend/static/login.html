@@ -57,7 +57,6 @@
     </div>
 
     <script>
-        // Скрипт для красивого отображения ошибки, если сервер вернул редирект с ?error=1
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('error') === '1') {
@@ -68,7 +67,6 @@
                     </div>
                 `;
                 
-                // Очищаем URL от параметра ошибки, чтобы при обновлении страницы она пропадала
                 window.history.replaceState({}, document.title, window.location.pathname);
             }
         });

@@ -8,26 +8,20 @@
 </head>
 <body class="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
     <div class="max-w-3xl mx-auto space-y-6">
-        <!-- Ссылка назад (опционально, в стиле целевой страницы) -->
         <a href="/" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
             ← Назад на главную
         </a>
 
-        <!-- Основной контейнер трансляции -->
         <div class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6">
-            
-            <!-- Заголовок -->
             <div class="border-b border-gray-100 pb-4">
                 <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Камера</span>
                 <h1 class="text-2xl font-extrabold text-gray-900 mt-1">Прямой эфир (WebSocket)</h1>
             </div>
 
-            <!-- Видеоплеер / Контейнер кадра -->
             <div class="overflow-hidden rounded-xl border border-gray-200 bg-gray-100 aspect-video flex items-center justify-center relative">
                 <img id="video-feed" src="" alt="Ожидание трансляции..." class="max-w-full max-h-full object-contain">
             </div>
 
-            <!-- Статус подключения -->
             <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 flex items-center justify-between text-sm">
                 <div>
                     <span class="block text-xs font-medium text-gray-400 uppercase">Статус соединения</span>
@@ -44,7 +38,6 @@
         const img = document.getElementById('video-feed');
         const statusDiv = document.getElementById('status');
         
-        // Подключаемся к Go-серверу на роут для зрителей
         const ws = new WebSocket('ws://localhost:8080/ws/view');
         ws.binaryType = "blob";
 
@@ -52,17 +45,14 @@
 
         ws.onopen = () => {
             statusDiv.textContent = "Соединение установлено. Трансляция активна.";
-            // Сбрасываем пульсацию ожидания и красим в зеленый
             statusDiv.className = "text-base font-bold text-green-600 mt-1 block";
         };
 
         ws.onmessage = function(event) {
             if (event.data instanceof Blob) {
-                // Очищаем старый URL для экономии оперативной памяти браузера
                 if (currentUrl) {
                     URL.revokeObjectURL(currentUrl);
                 }
-                // Генерируем ссылку из сырых байт кадра и вставляем в тег <img>
                 currentUrl = URL.createObjectURL(event.data);
                 img.src = currentUrl;
             }
@@ -70,7 +60,6 @@
 
         ws.onclose = () => {
             statusDiv.textContent = "Соединение разорвано. Сервер отключен.";
-            // Красим в красный стиль ошибок
             statusDiv.className = "text-base font-bold text-red-600 mt-1 block";
         };
 

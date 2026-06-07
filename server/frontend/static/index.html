@@ -8,9 +8,14 @@
 </head>
 <body class="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
     <div class="max-w-4xl mx-auto space-y-8">
-        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight text-center sm:text-left">
-            Система управления дефектами
-        </h1>
+        <div class="flex items-center justify-between gap-4 w-full mb-3">
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight text-center sm:text-left">
+                Система управления дефектами
+            </h1>
+            <button id="viewStream" class="shrink-0 rounded-xl border border-blue-200 bg-white px-4 py-2 text-center text-sm font-medium text-blue-600 shadow-sm transition-all hover:border-blue-600 hover:bg-blue-600 hover:text-white">
+                Смотреть трансляцию
+            </button>
+        </div>
         <div id="message" class="transition-all duration-300"></div>
         <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <div class="flex items-center justify-between gap-4 w-full mb-3">
@@ -30,6 +35,7 @@
 
     <script>
         const clrbdbtn = document.getElementById("clearBD");
+        const viewStream = document.getElementById("viewStream");
         clrbdbtn.addEventListener("click", async () => {
             try {
                 const response = await fetch("/api/clearDefects", {
@@ -48,6 +54,9 @@
             } catch (error) {
                 console.error('Error:', error);
             }
+        });
+        viewStream.addEventListener("click", () => {
+            document.location = "/view";
         });
 
         async function loadDefects() {
