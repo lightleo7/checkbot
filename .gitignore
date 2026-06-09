@@ -222,4 +222,4 @@ __marimo__/
 .streamlit/secrets.toml
 
 data/train/
-data/cashe/
+data/cache/
