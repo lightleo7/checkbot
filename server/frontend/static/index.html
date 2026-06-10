@@ -1,117 +1,106 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" class="bg-gray-50 text-gray-900">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Система управления дефектами</title>
     <link rel="stylesheet" href="/static/output.css">
 </head>
-<body>
-    <div class="container">
-        <h1>Система управления дефектами</h1>
-        
-        <div id="message"></div>
-        
-        <div class="form-card">
-            <h2>Добавить новый дефект</h2>
-            <div class="form-group">
-                <label for="defectType">Тип дефекта:</label>
-                <input type="text" id="defectType" placeholder="Например: tree, crack, hole" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="coordinates">Координаты:</label>
-                <input type="number" id="coordinates" placeholder="Введите координаты" required>
-            </div>
-            
-            <button onclick="addDefect()" class="btn-primary">Добавить дефект</button>
+<body class="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto space-y-8">
+        <div class="flex items-center justify-between gap-4 w-full mb-3">
+            <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight text-center sm:text-left">
+                Система управления дефектами
+            </h1>
+            <button id="viewStream" class="shrink-0 rounded-xl border border-blue-200 bg-white px-4 py-2 text-center text-sm font-medium text-blue-600 shadow-sm transition-all hover:border-blue-600 hover:bg-blue-600 hover:text-white">
+                Смотреть трансляцию
+            </button>
         </div>
-        
-        <div class="defect-section">
-            <h2>Список дефектов</h2>
-            <div id="defectsList" class="defects-grid">
-                <p class="loading-text">Загрузка дефектов...</p>
+        <div id="message" class="transition-all duration-300"></div>
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+            <div class="flex items-center justify-between gap-4 w-full mb-3">
+                <h2 class="text-xl font-bold text-gray-900">Список дефектов</h2>
+                
+                <button id="clearBD" class="shrink-0 rounded-xl border border-blue-200 bg-white px-4 py-2 text-center text-sm font-medium text-blue-600 shadow-sm transition-all hover:border-blue-600 hover:bg-blue-600 hover:text-white">
+                    Очистить базу данных
+                </button>
+            </div>
+            <div id="defectsList" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <p class="col-span-full text-center py-8 text-gray-500 animate-pulse">
+                    Загрузка дефектов...
+                </p>
             </div>
         </div>
     </div>
 
     <script>
-        async function addDefect() {
-            const defectType = document.getElementById('defectType').value;
-            const coordinates = document.getElementById('coordinates').value;
-            
-            if (!defectType || !coordinates) {
-                showMessage('Пожалуйста, заполните все поля', 'error');
-                return;
-            }
-            
-            const defect = {
-                Type: defectType,
-                Coordinates: parseInt(coordinates)
-            };
-            
+        const clrbdbtn = document.getElementById("clearBD");
+        const viewStream = document.getElementById("viewStream");
+        clrbdbtn.addEventListener("click", async () => {
             try {
-                const response = await fetch('/api/defects', {
+                const response = await fetch("/api/clearDefects", {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(defect)
+                    body: "{}"
                 });
-                
-                if (response.ok) {
-                    showMessage('Дефект успешно добавлен', 'success');
-                    document.getElementById('defectType').value = '';
-                    document.getElementById('coordinates').value = '';
-                    loadDefects();
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
                 } else {
-                    const error = await response.json();
-                    showMessage('Ошибка: ' + (error.error || 'Неизвестная ошибка'), 'error');
+                    location.reload();
                 }
             } catch (error) {
-                showMessage('Ошибка сети: ' + error.message, 'error');
+                console.error('Error:', error);
             }
-        }
-        
+        });
+        viewStream.addEventListener("click", () => {
+            document.location = "/view";
+        });
+
         async function loadDefects() {
             try {
                 const response = await fetch('/api/defects');
-                if (!response.ok) {
-                    throw new Error('Ошибка загрузки данных');
-                }
+                if (!response.ok) throw new Error('Ошибка загрузки данных');
                 
                 const defects = await response.json();
                 const defectsList = document.getElementById('defectsList');
-                
-                if (defects.length === 0) {
-                    defectsList.innerHTML = '<p class="empty-text">Нет дефектов в базе данных</p>';
+                if (!defects || defects.length === 0) {
+                    defectsList.innerHTML = `
+                        <p class="col-span-full text-center py-8 text-gray-500 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                            Нет дефектов в базе данных
+                        </p>`;
                     return;
                 }
                 
                 defectsList.innerHTML = defects.map(defect => `
-                    <div class="defect-card">
-                        <div class="defect-id">ID: ${defect.id}</div>
-                        <div class="defect-type">Тип: ${defect.type}</div>
-                        <div class="defect-coordinates">Координаты: ${defect.coordinates}</div>
+                    <div class="p-5 bg-gray-50 rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all group flex flex-col justify-between">
+                        <div>
+                            <div class="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">
+                                ID: ${defect.id}
+                            </div>
+                            <div class="text-base font-bold text-gray-800 mb-1 group-hover:text-blue-600 transition-colors">
+                                Тип: ${defect.type}
+                            </div>
+                            <div class="text-sm text-gray-600 mb-4">
+                                Координаты: <span class="font-mono bg-white px-1.5 py-0.5 rounded border border-gray-200 text-xs">${defect.coordinates}</span>
+                            </div>
+                        </div>
+                        <a href="/defect?id=${defect.id}" class="w-full text-center block bg-white hover:bg-blue-600 text-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 font-medium py-2 px-4 rounded-xl text-sm transition-all shadow-sm">
+                            Открыть
+                        </a>
                     </div>
                 `).join('');
             } catch (error) {
-                console.error('Ошибка загрузки дефектов:', error);
-                document.getElementById('defectsList').innerHTML = 
-                    '<p class="error-text">Ошибка загрузки данных</p>';
+                console.error('Ошибка:', error);
+                document.getElementById('defectsList').innerHTML = `
+                    <p class="col-span-full text-center py-6 text-red-600 bg-red-50 rounded-xl border border-red-100">
+                        Ошибка загрузки данных
+                    </p>`;
             }
         }
         
-        function showMessage(text, type) {
-            const messageDiv = document.getElementById('message');
-            const messageClass = type === 'error' ? 'error-message' : 'success-message';
-            messageDiv.innerHTML = `<div class="${messageClass}">${text}</div>`;
-            setTimeout(() => {
-                messageDiv.innerHTML = '';
-            }, 3000);
-        }
-        
-        // Загружаем дефекты при загрузке страницы
         document.addEventListener('DOMContentLoaded', loadDefects);
     </script>
 </body>

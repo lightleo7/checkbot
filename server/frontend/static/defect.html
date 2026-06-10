@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ru" class="bg-gray-50 text-gray-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Просмотр дефекта</title>
+    <link rel="stylesheet" href="/static/output.css">
+</head>
+<body class="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-3xl mx-auto space-y-6">
+        <a href="/" class="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+            ← Назад к списку
+        </a>
+
+        <div id="defectContainer" class="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 space-y-6">
+            <p class="text-center py-8 text-gray-500 animate-pulse">Загрузка информации о дефекте...</p>
+        </div>
+    </div>
+
+    <script>
+        async function loadDefectDetails() {
+            const container = document.getElementById('defectContainer');
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+
+            if (!id) {
+                container.innerHTML = `<p class="text-red-600 font-medium text-center">Идентификатор дефекта не указан</p>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/defects/${id}`);
+                if (!response.ok) throw new Error('Дефект не найден');
+
+                const defect = await response.json();
+
+                let imagesHtml = '<p class="text-gray-400 text-sm italic">Изображения отсутствуют</p>';
+                if (defect.images && defect.images.length > 0) {
+                    imagesHtml = `
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            ${defect.images.map(src => `
+                                <div class="overflow-hidden rounded-xl border border-gray-200 bg-gray-100 aspect-video flex items-center justify-center">
+                                    <img src="${src}" alt="Дефект" class="max-w-full max-h-full object-contain hover:scale-105 transition-transform duration-300">
+                                </div>
+                            `).join('')}
+                        </div>`;
+
+                }
+
+                container.innerHTML = `
+                    <div class="border-b border-gray-100 pb-4">
+                        <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Дефект</span>
+                        <h1 class="text-2xl font-extrabold text-gray-900 mt-1">ID: ${defect.id}</h1>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <span class="block text-xs font-medium text-gray-400 uppercase">Тип дефекта</span>
+                            <span class="text-base font-bold text-gray-800 mt-1 block">${defect.type}</span>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                            <span class="block text-xs font-medium text-gray-400 uppercase">Координаты</span>
+                            <span class="text-base font-mono font-bold text-gray-800 mt-1 block">${defect.coordinates}</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-gray-400">Изображения дефекта</h3>
+                        ${imagesHtml}
+                    </div>
+                `;
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `
+                    <p class="text-center py-6 text-red-600 bg-red-50 rounded-xl border border-red-100 font-medium">
+                        Ошибка загрузки данных или дефект не существует
+                    </p>`;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDefectDetails);
+    </script>
+</body>
+</html>
