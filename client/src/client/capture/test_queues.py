@@ -4,6 +4,7 @@ import cv2
 from threading import Thread
 from client.capture import Frame, FBuf
 from client.utils import logerr
+from client.capture.detect_rails import preprocess
 
 raw_buffer = FBuf(val_type=Frame, maxsize=5)
 gray_buffer = FBuf(val_type=Frame, maxsize=5)
@@ -24,7 +25,7 @@ def to_gray(img: Frame) -> Frame:
     return Frame(cv2.cvtColor(img.img, cv2.COLOR_RGB2GRAY), img.timestamp)
 
 def reading_frames():
-    vc = cv2.VideoCapture(0)
+    vc = cv2.VideoCapture("data/train/rails1.mp4")
     while True:
         ret, frame = vc.read()
         if ret:
@@ -32,6 +33,8 @@ def reading_frames():
     vc.release()
 
 def show_frames():
+    cv2.namedWindow("Camera", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Camera", 800, 600)
     while True:
         frame_obj: Frame = gray_buffer.get()
         if frame_obj is not None:
@@ -41,7 +44,7 @@ def show_frames():
     cv2.destroyAllWindows()
 
 read_thread = Thread(target=reading_frames)
-gray_thread = Thread(target=transport, args=(raw_buffer, to_gray, gray_buffer))
+gray_thread = Thread(target=transport, args=(raw_buffer, preprocess, gray_buffer))
 show_thread = Thread(target=show_frames)
 
 gray_thread.start()
