@@ -1,24 +1,28 @@
 import asyncio
 import cv2
-from server_communication.upload import SendData
+from defects import DefectTypes
+from server_communication.upload import send_data
 from server_communication.websocket_stream import ws_streaming_task, frame_queue
 
+
 async def example():
-    image = cv2.imread('photo.jpg', cv2.IMREAD_GRAYSCALE)
-    image2 = cv2.imread('photo.jpg')
+    image = cv2.imread("photo.jpg", cv2.IMREAD_GRAYSCALE)
+    image2 = cv2.imread("photo.jpg")
     # one image
-    await SendData(Type="treeeeee", Coordinates="12350", cvImages=[image])
+    await send_data(Type=DefectTypes.TREE, Coordinates="12350", cvImages=[image])
     # two images
-    await SendData(Type="trees", Coordinates="762381588", cvImages=[image, image2])
+    await send_data(
+        Type=DefectTypes.PERSON, Coordinates="762381588", cvImages=[image, image2]
+    )
 
 
 async def main():
-    cap = cv2.VideoCapture(0)
-    
+    cap = cv2.VideoCapture(1)
+
     if not cap.isOpened():
         print("Ошибка: Не удалось открыть камеру!")
         return
-    
+
     frame_count = 0
     STREAM_EVERY_N_FRAME = 3
 
@@ -34,18 +38,24 @@ async def main():
             frame_count += 1
 
             key = cv2.waitKey(1) & 0xFF
-            if key == ord('s'):
-                asyncio.create_task(SendData(Type="treeeeee", Coordinates="12350", cvImages=[frame.copy()]))
+            if key == ord("s"):
+                asyncio.create_task(
+                    send_data(
+                        Type=DefectTypes.TREE,
+                        Coordinates="12350",
+                        cvImages=[frame.copy()],
+                    )
+                )
 
-            if key == ord('q'):
+            if key == ord("q"):
                 print("end...")
                 break
 
             cv2.imshow("framerr", frame)
 
             if frame_count % STREAM_EVERY_N_FRAME == 0:
-                if not frame_queue.full():
-                    frame_queue.put_nowait(frame.copy())
+                if not frame_queue.q.full():
+                    await frame_queue.put(frame.copy())
 
             await asyncio.sleep(0.001)
 
@@ -54,7 +64,7 @@ async def main():
         cap.release()
         cv2.destroyAllWindows()
         await asyncio.sleep(1)
-    
+
 
 if __name__ == "__main__":
     asyncio.run(main())
