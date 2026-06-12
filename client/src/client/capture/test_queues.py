@@ -4,10 +4,10 @@ import cv2
 from threading import Thread
 from client.capture import Frame, FBuf
 from client.utils import logerr
-from client.capture.detect_rails import preprocess
+from client.capture.detect_rails import detect_rails
 
 raw_buffer = FBuf(val_type=Frame, maxsize=5)
-gray_buffer = FBuf(val_type=Frame, maxsize=5)
+rails_buffer = FBuf(val_type=Frame, maxsize=5)
 
 def transport(buf1: FBuf, processor: Callable, buf2: FBuf, error_callback: Callable = lambda t: logerr(f"Obj from first buffer with type {t.__name__} is None")):
     while True:
@@ -21,9 +21,6 @@ def transport(buf1: FBuf, processor: Callable, buf2: FBuf, error_callback: Calla
             else:
                 buf2.put(obj2)
 
-def to_gray(img: Frame) -> Frame:
-    return Frame(cv2.cvtColor(img.img, cv2.COLOR_RGB2GRAY), img.timestamp)
-
 def reading_frames():
     vc = cv2.VideoCapture("data/train/rails1.mp4")
     while True:
@@ -36,7 +33,7 @@ def show_frames():
     cv2.namedWindow("Camera", cv2.WINDOW_NORMAL)
     cv2.resizeWindow("Camera", 800, 600)
     while True:
-        frame_obj: Frame = gray_buffer.get()
+        frame_obj: Frame = rails_buffer.get()
         if frame_obj is not None:
             cv2.imshow("Camera", frame_obj.img)
         if cv2.waitKey(1) == ord('q'):
@@ -44,13 +41,9 @@ def show_frames():
     cv2.destroyAllWindows()
 
 read_thread = Thread(target=reading_frames)
-gray_thread = Thread(target=transport, args=(raw_buffer, preprocess, gray_buffer))
+rails_thread = Thread(target=transport, args=(raw_buffer, detect_rails, rails_buffer))
 show_thread = Thread(target=show_frames)
 
-gray_thread.start()
+rails_thread.start()
 read_thread.start()
 show_thread.start()
-
-gray_thread.join()
-read_thread.join()
-show_thread.join()

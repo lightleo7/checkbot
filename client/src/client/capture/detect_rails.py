@@ -2,7 +2,6 @@ from client.utils import create_frame
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-from tqdm import tqdm
 from client.capture import Frame
 
 def imshow(img):
@@ -38,12 +37,12 @@ def create_mask(shape: tuple[int, int], lines: list[tuple[int]], area:int = 5) -
             mask[y, left:right] = 255
     return mask
 
-def preprocess(frame: Frame) -> Frame:
-    img = frame.img
+def detect_rails(frame: Frame) -> Frame:
+    img = frame.img[650:]
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     sobelx = cv2.Sobel(gray, ddepth=cv2.CV_64F, ksize=7, dx=1, dy=0)
     old_min, old_max = sobelx.min(), sobelx.max()
-    sobel_norm = np.uint8((img - old_min) * (255.0 / (old_max - old_min)))
+    sobel_norm = np.uint8((sobelx - old_min) * (255.0 / (old_max - old_min)))
     blur = cv2.GaussianBlur(sobel_norm, (7, 7), 0)
     edges = cv2.Canny(blur, 100, 200)
     lines = cv2.HoughLinesP(
