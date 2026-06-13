@@ -21,6 +21,9 @@ def transport(buf1: FBuf, processor: Callable, buf2: FBuf, error_callback: Calla
             else:
                 buf2.put(obj2)
 
+def cut_frame(frame: Frame) -> Frame:
+    return frame.update(frame.img[650:, 100:])
+
 def reading_frames():
     vc = cv2.VideoCapture("data/train/rails1.mp4")
     while True:
