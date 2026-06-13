@@ -17,8 +17,10 @@ async def ws_streaming_task():
                 print("[WS Client] Успешно подключено к стриму!")
 
                 while True:
-                    frame = await frame_queue.get()
+                    frame = await asyncio.to_thread(frame_queue.get)
+                    
                     if frame is None:
+                        await asyncio.sleep(0.01)
                         continue
 
                     success, encoded_img = cv2.imencode(

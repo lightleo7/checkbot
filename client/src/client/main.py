@@ -17,7 +17,7 @@ async def example():
 
 
 async def main():
-    cap = cv2.VideoCapture(1)
+    cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
         print("Ошибка: Не удалось открыть камеру!")
@@ -38,9 +38,11 @@ async def main():
             frame_count += 1
 
             key = cv2.waitKey(1) & 0xFF
+            
             if key == ord("s"):
                 asyncio.create_task(
-                    send_data(
+                    asyncio.to_thread(
+                        send_data,
                         Type=DefectTypes.TREE,
                         Coordinates="12350",
                         cvImages=[frame.copy()],
@@ -54,17 +56,19 @@ async def main():
             cv2.imshow("framerr", frame)
 
             if frame_count % STREAM_EVERY_N_FRAME == 0:
-                if not frame_queue.q.full():
-                    await frame_queue.put(frame.copy())
+                frame_queue.put(frame.copy())
 
-            await asyncio.sleep(0.001)
+            await asyncio.sleep(0.005)
 
     finally:
         ws_task.cancel()
         cap.release()
         cv2.destroyAllWindows()
-        await asyncio.sleep(1)
+        await asyncio.sleep(0.5)
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nKeyboardInterrupt")
